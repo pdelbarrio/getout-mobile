@@ -26,7 +26,7 @@ A mobile application to discover and share interesting spots in Barcelona. (work
 1. Clone the repository
 
    ```bash
-   git clone [your-repository-url]
+   git clone https://github.com/pdelbarrio/getout-mobile
    ```
 
 1. Install dependencies

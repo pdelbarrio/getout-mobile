@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
-function AddSpot() {
+export default function AddSpot() {
     return (
         <View style={styles.container}>
             <Text style={styles.text}>Add Spot Screen</Text>
@@ -19,7 +19,5 @@ const styles = StyleSheet.create({
     text: {
         color: '#FFFFFF',
         fontSize: 18,
-    },
+    }
 });
-
-export default AddSpot;
