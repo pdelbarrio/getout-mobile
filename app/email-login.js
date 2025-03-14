@@ -3,59 +3,38 @@ import { View, StyleSheet, Alert } from 'react-native';
 import { Text, Button, Input } from 'react-native-elements';
 import { useRouter } from 'expo-router';
 import { supabase } from '../lib/supabase';
+import ProtectedRoute from '../components/ProtectedRoute';
 
-export default function Signup() {
+export default function EmailLogin() {
+    return (
+        <ProtectedRoute authRequired={false}>
+            <EmailLoginContent />
+        </ProtectedRoute>
+    );
+}
+
+function EmailLoginContent() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const router = useRouter();
 
-    const handleSignup = async () => {
-        if (password !== confirmPassword) {
-            Alert.alert('Error', 'Passwords do not match');
-            return;
-        }
-
+    const handleLogin = async () => {
+        console.log('Login attempt with:', { email }); // Debug log
         try {
             setLoading(true);
-
-            // Create auth user
-            const { data, error } = await supabase.auth.signUp({
+            const { data, error } = await supabase.auth.signInWithPassword({
                 email,
                 password
             });
 
-            if (error) {
-                console.error('Auth Error:', error);
-                throw error;
-            }
+            if (error) throw error;
 
-            console.log('Auth Success:', data);
-
-            // Create profile entry
-            if (data?.user) {
-                const { error: profileError } = await supabase
-                    .from('profiles')
-                    .insert({
-                        id: data.user.id,
-                        email: data.user.email
-                    });
-
-                if (profileError) {
-                    console.error('Profile Error:', profileError);
-                    throw profileError;
-                }
-            }
-
-            Alert.alert(
-                'Success',
-                'Account created successfully!',
-                [{ text: 'OK', onPress: () => router.push('/') }]
-            );
+            console.log('Login successful:', data); // Debug log
+            router.replace('/');
 
         } catch (error) {
-            console.error('Error:', error.message);
+            console.error('Login error:', error); // Debug log
             Alert.alert('Error', error.message);
         } finally {
             setLoading(false);
@@ -64,7 +43,7 @@ export default function Signup() {
 
     return (
         <View style={styles.container}>
-            <Text h3 style={styles.title}>Create Account</Text>
+            <Text h3 style={styles.title}>Login</Text>
 
             <Input
                 placeholder="Email"
@@ -85,25 +64,16 @@ export default function Signup() {
                 placeholderTextColor="#666"
             />
 
-            <Input
-                placeholder="Confirm Password"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry
-                inputStyle={styles.input}
-                placeholderTextColor="#666"
-            />
-
             <Button
-                title="Sign Up"
+                title="Login"
                 loading={loading}
-                buttonStyle={styles.signupButton}
+                buttonStyle={styles.loginButton}
                 containerStyle={styles.buttonContainer}
-                onPress={handleSignup}
+                onPress={handleLogin}
             />
 
             <Button
-                title="Back to Login"
+                title="Back"
                 type="clear"
                 titleStyle={styles.backButton}
                 onPress={() => router.back()}
@@ -130,7 +100,7 @@ const styles = StyleSheet.create({
         width: '100%',
         marginVertical: 10,
     },
-    signupButton: {
+    loginButton: {
         backgroundColor: '#4285F4',
         padding: 15,
         borderRadius: 8,

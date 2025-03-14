@@ -4,8 +4,18 @@ import { Text, Button } from 'react-native-elements';
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from 'expo-router';
 import { testSupabaseConnection } from '../lib/testSupabase';
+import ProtectedRoute from '../components/ProtectedRoute';
 
 export default function Login() {
+    // Wrap the existing content with ProtectedRoute
+    return (
+        <ProtectedRoute authRequired={false}>
+            <LoginContent />
+        </ProtectedRoute>
+    );
+}
+
+function LoginContent() {
     const router = useRouter();
 
     const handleEmailSignup = () => {
@@ -13,7 +23,13 @@ export default function Login() {
     };
 
     const handleEmailLogin = () => {
-        router.push('/email-login');
+        console.log("Attempting navigation to email-login");
+        try {
+            router.navigate('email-login');  // Using navigate instead
+            console.log("Navigation command executed");
+        } catch (error) {
+            console.error("Navigation error:", error);
+        }
     };
 
     const handleForgotPassword = () => {
