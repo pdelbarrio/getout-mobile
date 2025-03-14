@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
-import { Text, Button, Input } from 'react-native-elements';
+import { Text, Button, Input, CheckBox } from 'react-native-elements';
 import { useRouter } from 'expo-router';
 import { supabase } from '../lib/supabase';
 import ProtectedRoute from '../components/ProtectedRoute';
@@ -17,24 +17,24 @@ function EmailLoginContent() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [rememberMe, setRememberMe] = useState(false);
     const router = useRouter();
 
     const handleLogin = async () => {
-        console.log('Login attempt with:', { email }); // Debug log
         try {
             setLoading(true);
             const { data, error } = await supabase.auth.signInWithPassword({
                 email,
-                password
+                password,
+                options: {
+                    persistSession: rememberMe
+                }
             });
 
             if (error) throw error;
-
-            console.log('Login successful:', data); // Debug log
             router.replace('/');
 
         } catch (error) {
-            console.error('Login error:', error); // Debug log
             Alert.alert('Error', error.message);
         } finally {
             setLoading(false);
@@ -62,6 +62,15 @@ function EmailLoginContent() {
                 secureTextEntry
                 inputStyle={styles.input}
                 placeholderTextColor="#666"
+            />
+
+            <CheckBox
+                title="Remember Me"
+                checked={rememberMe}
+                onPress={() => setRememberMe(!rememberMe)}
+                containerStyle={styles.checkboxContainer}
+                textStyle={styles.checkboxText}
+                checkedColor="#4285F4"
             />
 
             <Button
@@ -107,5 +116,16 @@ const styles = StyleSheet.create({
     },
     backButton: {
         color: '#4285F4',
+    },
+    checkboxContainer: {
+        backgroundColor: 'transparent',
+        borderWidth: 0,
+        padding: 0,
+        marginLeft: 0,
+        marginBottom: 20,
+    },
+    checkboxText: {
+        color: '#FFFFFF',
+        fontWeight: 'normal',
     }
 });
