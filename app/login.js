@@ -1,13 +1,16 @@
-import React, { useEffect } from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
+import React from 'react';
+import { View, StyleSheet, Pressable, Alert, Linking } from 'react-native';
 import { Text, Button } from 'react-native-elements';
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from 'expo-router';
-import { testSupabaseConnection } from '../lib/testSupabase';
+import * as WebBrowser from 'expo-web-browser';
+import { supabase } from '../lib/supabase';
 import ProtectedRoute from '../components/ProtectedRoute';
+import { useAuth } from '../contexts/AuthContext';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function Login() {
-    // Wrap the existing content with ProtectedRoute
     return (
         <ProtectedRoute authRequired={false}>
             <LoginContent />
@@ -15,30 +18,80 @@ export default function Login() {
     );
 }
 
+
+
 function LoginContent() {
     const router = useRouter();
+    const { session } = useAuth();
 
     const handleEmailSignup = () => {
         router.push('/signup');
     };
 
     const handleEmailLogin = () => {
-        console.log("Attempting navigation to email-login");
-        try {
-            router.navigate('email-login');  // Using navigate instead
-            console.log("Navigation command executed");
-        } catch (error) {
-            console.error("Navigation error:", error);
-        }
+        router.navigate('email-login');
     };
 
     const handleForgotPassword = () => {
         router.push('/forgot-password');
     };
 
-    useEffect(() => {
-        testSupabaseConnection();
-    }, []);
+    const handleGooglePress = async () => {
+        try {
+            console.log('Starting Google auth...');
+            const redirectUrl = 'exp://192.168.1.47:8081';
+
+            const { data, error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: redirectUrl,
+                    skipBrowserRedirect: true,
+                    queryParams: {
+                        access_type: 'offline',
+                        prompt: 'consent'
+                    }
+                }
+            });
+
+            if (error) throw error;
+
+            if (data?.url) {
+                console.log('Opening auth URL in WebBrowser...');
+                const result = await WebBrowser.openAuthSessionAsync(
+                    data.url,
+                    redirectUrl,
+                    {
+                        showInRecents: true,
+                        createTask: true,
+                        dismissButtonStyle: 'done'
+                    }
+                );
+
+                console.log('WebBrowser result:', result);
+
+                if (result.type === 'success') {
+                    const { data: authData, error: authError } = await supabase.auth.exchangeCodeForSession(
+                        result.url.split('code=')[1]
+                    );
+
+                    if (authError) throw authError;
+
+                    if (authData.session) {
+                        console.log('Session established successfully');
+                        router.replace('/');
+                    }
+                }
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Failed to start Google Sign In');
+            console.error('Google auth error:', error);
+        }
+    };
+
+    // Remove local useEffect and use session from AuthContext
+    if (session) {
+        return null;
+    }
 
     return (
         <View style={styles.container}>
@@ -66,7 +119,10 @@ function LoginContent() {
                 <Text style={styles.dividerText}>or</Text>
             </View>
 
-            <Pressable style={styles.googleButton}>
+            <Pressable
+                style={styles.googleButton}
+                onPress={handleGooglePress}
+            >
                 <Ionicons name="logo-google" size={24} color="white" style={styles.icon} />
                 <Text style={styles.buttonText}>Continue with Google</Text>
             </Pressable>
